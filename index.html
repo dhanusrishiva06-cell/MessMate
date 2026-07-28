@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hive Hostel - Smart Mess Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 80px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .nav-icon {
+            width: 50px;
+            height: 50px;
+            margin: 15px 0;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 24px;
+            color: white;
+        }
+
+        .nav-icon:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .nav-icon.active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: 80px;
+            width: calc(100% - 80px);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .page {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .page.active {
+            display: block;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Home Page */
+        .home-container {
+            text-align: center;
+            color: white;
+        }
+
+        .home-container h1 {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .home-container p {
+            font-size: 1.5rem;
+            margin-bottom: 40px;
+            opacity: 0.9;
+        }
+
+        .login-btn {
+            padding: 20px 60px;
+            font-size: 1.5rem;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+        }
+
+        /* Login Page */
+        .login-container {
+            background: white;
+            padding: 60px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .login-container h2 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        .input-group {
+            margin-bottom: 30px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.2rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            transition: all 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 18px;
+            font-size: 1.3rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+        }
+
+        /* Day Selection Page */
+        .day-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .day-card {
+            background: white;
+            padding: 60px 40px;
+            border-radius: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .day-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+        }
+
+        .day-card h3 {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .day-card p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        /* Menu Page */
+        .menu-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .menu-container h2 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .meal-section {
+            margin-bottom: 30px;
+        }
+
+        .meal-section h3 {
+            font-size: 1.8rem;
+            color: #764ba2;
+            margin-bottom: 15px;
+        }
+
+        .meal-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 3px solid transparent;
+        }
+
+        .meal-item:hover {
+            background: #e9ecef;
+        }
+
+        .meal-item.selected {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .meal-info {
+            flex: 1;
+        }
+
+        .meal-info h4 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .meal-price {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #28a745;
+        }
+
+        .meal-item.selected .meal-price {
+            color: white;
+        }
+
+        .view-bill-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5rem;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .view-bill-btn:hover {
+            background: #218838;
+            transform: translateY(-3px);
+        }
+
+        /* Bill Page */
+        .bill-container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .bill-container h2 {
+            color: #667eea;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .bill-info {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+        }
+
+        .bill-info p {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .bill-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+
+        .bill-table th,
+        .bill-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 2px solid #e0e0e0;
+            font-size: 1.1rem;
+        }
+
+        .bill-table th {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 1.3rem;
+        }
+
+        .total-amount {
+            text-align: right;
+            font-size: 2rem;
+            color: #28a745;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+
+        .payment-section {
+            text-align: center;
+            padding: 30px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+
+        .payment-section h3 {
+            color: #667eea;
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+        }
+
+        .qr-code {
+            width: 300px;
+            height: 300px;
+            background: white;
+            margin: 20px auto;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #666;
+            border: 3px solid #667eea;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.5rem;
+            color: #667eea;
+        }
+
+        .back-btn {
+            padding: 12px 30px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #5a6268;
+        }
+
+        /* Scanner Page Styles */
+        .meal-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 5px solid #667eea;
+        }
+
+        .meal-card h4 {
+            color: #667eea;
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+        }
+
+        .meal-card p {
+            font-size: 1.1rem;
+            color: #333;
+            margin: 5px 0;
+        }
+
+        .confirm-btn {
+            width: 100%;
+            padding: 20px;
+            font-size: 1.5rem;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+
+        .confirm-btn:hover {
+            background: #218838;
+            transform: translateY(-3px);
+        }
+
+        .student-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .student-header h3 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <div class="nav-icon" onclick="showPage('home')" title="Home">🏠</div>
+        <div class="nav-icon" onclick="showPage('login')" title="Login">🔐</div>
+        <div class="nav-icon" onclick="showDaySelection()" title="Menu">📅</div>
+        <div class="nav-icon" onclick="showPage('scanner')" title="Scan ID">📷</div>
+        <div class="nav-icon" onclick="showBill()" title="Bill">💰</div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Home Page -->
+        <div id="home" class="page active">
+            <div class="home-container">
+                <h1>🏠 Hive Hostel</h1>
+                <p>Smart Mess Management System</p>
+                <button class="login-btn" onclick="showPage('login')">Login to Continue</button>
+            </div>
+        </div>
+
+        <!-- Login Page -->
+        <div id="login" class="page">
+            <div class="login-container">
+                <h2>Student Login</h2>
+                <div class="input-group">
+                    <input type="text" id="studentId" placeholder="Enter Student ID" required>
+                </div>
+                <button class="submit-btn" onclick="handleLogin()">Login</button>
+            </div>
+        </div>
+
+        <!-- Day Selection Page -->
+        <div id="daySelection" class="page">
+            <div class="day-container">
+                <div class="day-card" onclick="showMenu('Monday')">
+                    <h3>Monday</h3>
+                    <p>Select meals for Monday</p>
+                </div>
+                <div class="day-card" onclick="showMenu('Tuesday')">
+                    <h3>Tuesday</h3>
+                    <p>Select meals for Tuesday</p>
+                </div>
+                <div class="day-card" onclick="showMenu('Wednesday')">
+                    <h3>Wednesday</h3>
+                    <p>Select meals for Wednesday</p>
+                </div>
+                <div class="day-card" onclick="showMenu('Thursday')">
+                    <h3>Thursday</h3>
+                    <p>Select meals for Thursday</p>
+                </div>
+                <div class="day-card" onclick="showMenu('Friday')">
+                    <h3>Friday</h3>
+                    <p>Select meals for Friday</p>
+                </div>
+                <div class="day-card" onclick="showMenu('Saturday')">
+                    <h3>Saturday</h3>
+                    <p>Select meals for Saturday</p>
+                </div>
+                <div class="day-card" onclick="showMenu('Sunday')">
+                    <h3>Sunday</h3>
+                    <p>Select meals for Sunday</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Page -->
+        <div id="menu" class="page">
+            <div class="menu-container">
+                <h2 id="menuDay">Menu</h2>
+                
+                <div class="meal-section">
+                    <h3>🌅 Breakfast</h3>
+                    <div class="meal-item" onclick="selectMeal(this, 'Breakfast', 'Idli + Sambar', 50)">
+                        <div class="meal-info">
+                            <h4>Idli + Sambar</h4>
+                        </div>
+                        <div class="meal-price">₹50</div>
+                    </div>
+                </div>
+
+                <div class="meal-section">
+                    <h3>🍛 Lunch</h3>
+                    <div class="meal-item" onclick="selectMeal(this, 'Lunch', 'Meals', 70)">
+                        <div class="meal-info">
+                            <h4>Meals</h4>
+                        </div>
+                        <div class="meal-price">₹70</div>
+                    </div>
+                </div>
+
+                <div class="meal-section">
+                    <h3>🌙 Dinner</h3>
+                    <div class="meal-item" onclick="selectMeal(this, 'Dinner', 'Dosa', 60)">
+                        <div class="meal-info">
+                            <h4>Dosa</h4>
+                        </div>
+                        <div class="meal-price">₹60</div>
+                    </div>
+                </div>
+
+                <button class="view-bill-btn" onclick="showBill()">View Monthly Bill</button>
+                <button class="back-btn" onclick="showDaySelection()">← Back to Days</button>
+            </div>
+        </div>
+
+        <!-- Bill Page -->
+        <div id="bill" class="page">
+            <div class="bill-container">
+                <h2>📊 Monthly Bill</h2>
+                <div id="billContent" class="loading">Loading bill details...</div>
+            </div>
+        </div>
+
+        <!-- Scanner Page (Mess Entrance) -->
+        <div id="scanner" class="page">
+            <div class="login-container" style="max-width: 600px;">
+                <h2>📷 Scan Student ID</h2>
+                <p style="color: #666; margin-bottom: 30px; font-size: 1.1rem;">
+                    Scan barcode at mess entrance to verify meals
+                </p>
+                
+                <div class="input-group">
+                    <input type="text" id="scannerInput" placeholder="Scan barcode or enter Student ID" 
+                           style="font-size: 1.5rem; text-align: center; font-weight: bold;"
+                           oninput="this.value = this.value.toUpperCase()" autofocus>
+                </div>
+                
+                <button class="submit-btn" onclick="verifyStudent()">✓ Verify & Show Meals</button>
+                
+                <div id="verificationResult" style="margin-top: 30px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration - REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
+        const APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+        
+        // Global variables
+        let currentStudentId = localStorage.getItem('studentId') || '';
+        let currentDay = '';
+
+        // Weekly menu data - Different meals for each day
+        const weeklyMenu = {
+            'Monday': {
+                breakfast: { name: 'Poha + Tea', price: 40 },
+                lunch: { name: 'Dal Rice + Roti + Sabzi', price: 70 },
+                dinner: { name: 'Chapati + Paneer Curry', price: 80 }
+            },
+            'Tuesday': {
+                breakfast: { name: 'Paratha + Curd', price: 50 },
+                lunch: { name: 'Rajma Rice + Salad', price: 75 },
+                dinner: { name: 'Fried Rice + Manchurian', price: 85 }
+            },
+            'Wednesday': {
+                breakfast: { name: 'Idli + Sambar + Chutney', price: 50 },
+                lunch: { name: 'Chole Rice + Roti', price: 70 },
+                dinner: { name: 'Masala Dosa + Sambhar', price: 60 }
+            },
+            'Thursday': {
+                breakfast: { name: 'Upma + Coffee', price: 40 },
+                lunch: { name: 'Veg Pulao + Raita + Papad', price: 80 },
+                dinner: { name: 'Roti + Dal Makhani', price: 75 }
+            },
+            'Friday': {
+                breakfast: { name: 'Aloo Paratha + Pickle', price: 55 },
+                lunch: { name: 'Biryani + Raita', price: 90 },
+                dinner: { name: 'Pizza + Garlic Bread', price: 100 }
+            },
+            'Saturday': {
+                breakfast: { name: 'Bread Omelette + Tea', price: 45 },
+                lunch: { name: 'Kadhi Rice + Bhindi Fry', price: 70 },
+                dinner: { name: 'Burger + Fries + Cold Drink', price: 95 }
+            },
+            'Sunday': {
+                breakfast: { name: 'Puri Bhaji + Jalebi', price: 60 },
+                lunch: { name: 'Special Thali (Rice+Roti+3 Sabzi)', price: 100 },
+                dinner: { name: 'Noodles + Spring Roll', price: 85 }
+            }
+        };
+
+        // Page navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            document.getElementById(pageId).classList.add('active');
+            
+            // Update sidebar active state
+            document.querySelectorAll('.nav-icon').forE
