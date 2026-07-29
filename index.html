@@ -618,7 +618,7 @@
 
     <script>
         // Configuration - REPLACE WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-        const APPS_SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL_HERE';
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbz9tQx5ZUOK_OQ2VcEeYVzgKb1dOKEykHosoeaT0MNrlOI2AeM0LAvMK_BSu1P1Zxo/exec';
         
         // Global variables
         let currentStudentId = localStorage.getItem('studentId') || '';
@@ -671,4 +671,385 @@
             document.getElementById(pageId).classList.add('active');
             
             // Update sidebar active state
-            document.querySelectorAll('.nav-icon').forE
+            document.querySelectorAll('.nav-icon').forEach(icon => {
+                icon.classList.remove('active');
+            });
+        }
+
+        // Handle login
+        function handleLogin() {
+            const studentId = document.getElementById('studentId').value.trim();
+            
+            if (!studentId) {
+                alert('Please enter your Student ID');
+                return;
+            }
+            
+            currentStudentId = studentId;
+            localStorage.setItem('studentId', studentId);
+            showDaySelection();
+        }
+
+        // Show day selection
+        function showDaySelection() {
+            if (!currentStudentId) {
+                showPage('login');
+                return;
+            }
+            showPage('daySelection');
+        }
+
+        // Show menu for selected day
+        function showMenu(day) {
+            currentDay = day;
+            document.getElementById('menuDay').textContent = `${day} Menu`;
+            
+            // Get menu for the selected day
+            const menu = weeklyMenu[day];
+            
+            // Update menu items
+            const menuContainer = document.querySelector('#menu .menu-container');
+            menuContainer.innerHTML = `
+                <h2 id="menuDay">${day} Menu</h2>
+                
+                <div class="meal-section">
+                    <h3>🌅 Breakfast</h3>
+                    <div class="meal-item" onclick="selectMeal(this, 'Breakfast', '${menu.breakfast.name}', ${menu.breakfast.price})">
+                        <div class="meal-info">
+                            <h4>${menu.breakfast.name}</h4>
+                        </div>
+                        <div class="meal-price">₹${menu.breakfast.price}</div>
+                    </div>
+                </div>
+
+                <div class="meal-section">
+                    <h3>🍛 Lunch</h3>
+                    <div class="meal-item" onclick="selectMeal(this, 'Lunch', '${menu.lunch.name}', ${menu.lunch.price})">
+                        <div class="meal-info">
+                            <h4>${menu.lunch.name}</h4>
+                        </div>
+                        <div class="meal-price">₹${menu.lunch.price}</div>
+                    </div>
+                </div>
+
+                <div class="meal-section">
+                    <h3>🌙 Dinner</h3>
+                    <div class="meal-item" onclick="selectMeal(this, 'Dinner', '${menu.dinner.name}', ${menu.dinner.price})">
+                        <div class="meal-info">
+                            <h4>${menu.dinner.name}</h4>
+                        </div>
+                        <div class="meal-price">₹${menu.dinner.price}</div>
+                    </div>
+                </div>
+
+                <button class="view-bill-btn" onclick="showBill()">View Monthly Bill</button>
+                <button class="back-btn" onclick="showDaySelection()">← Back to Days</button>
+            `;
+            
+            showPage('menu');
+        }
+
+        // Select meal and save to Google Sheets
+        async function selectMeal(element, mealType, mealName, price) {
+            if (!currentStudentId) {
+                showPage('login');
+                return;
+            }
+
+            // Toggle selection
+            element.classList.toggle('selected');
+            
+            if (element.classList.contains('selected')) {
+                // Save to Google Sheets
+                await saveMealSelection(mealType, mealName, price);
+            }
+        }
+
+        // Save meal selection to Google Sheets
+        async function saveMealSelection(mealType, mealName, price) {
+            const data = {
+                studentId: currentStudentId,
+                day: currentDay,
+                date: new Date().toISOString().split('T')[0],
+                meal: `${mealType} - ${mealName}`,
+                price: price
+            };
+
+            try {
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                console.log('Meal saved successfully:', result);
+            } catch (error) {
+                console.error('Error saving meal:', error);
+                alert('Failed to save meal. Please check your connection and try again.');
+            }
+        }
+
+        // Show bill page
+        async function showBill() {
+            if (!currentStudentId) {
+                showPage('login');
+                return;
+            }
+
+            showPage('bill');
+            document.getElementById('billContent').innerHTML = '<div class="loading">Loading bill details...</div>';
+            
+            await loadBillData();
+        }
+
+        // Load bill data from Google Sheets
+        async function loadBillData() {
+            try {
+                const response = await fetch(`${APPS_SCRIPT_URL}?studentId=${currentStudentId}`);
+                const data = await response.json();
+                
+                displayBill(data);
+            } catch (error) {
+                console.error('Error loading bill:', error);
+                document.getElementById('billContent').innerHTML = `
+                    <div class="bill-info">
+                        <p><strong>Student ID:</strong> ${currentStudentId}</p>
+                        <p><strong>Month:</strong> ${new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</p>
+                    </div>
+                    <p style="text-align: center; color: #666; font-size: 1.2rem;">
+                        No data available or unable to connect to server.<br>
+                        Please configure your Google Apps Script URL.
+                    </p>
+                    <div class="payment-section">
+                        <h3>💳 Pay Your Bill</h3>
+                        <div class="qr-code">
+                            📱 Scan QR Code<br>to Pay
+                        </div>
+                        <p style="font-size: 1.2rem; color: #666;">
+                            Use Google Pay, PhonePe, or Paytm
+                        </p>
+                    </div>
+                    <button class="back-btn" onclick="showDaySelection()">← Back to Menu</button>
+                `;
+            }
+        }
+
+        // Display bill data
+        function displayBill(data) {
+            const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+            const meals = data.meals || [];
+            const totalAmount = data.totalAmount || 0;
+
+            // Generate UPI payment link with amount
+            const upiId = "7395896532@ptsbi"; // Your actual UPI ID
+            const merchantName = "Hive_Hostel";
+            const upiLink = `upi://pay?pa=${upiId}&pn=${merchantName}&am=${totalAmount}&cu=INR&tn=Mess_Bill_${currentMonth.replace(' ', '_')}`;
+            
+            // Generate QR code using QR Server API
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=280x280&data=${encodeURIComponent(upiLink)}&format=png`;
+
+            let tableRows = '';
+            meals.forEach(meal => {
+                tableRows += `
+                    <tr>
+                        <td>${meal.date}</td>
+                        <td>${meal.day}</td>
+                        <td>${meal.meal}</td>
+                        <td>₹${meal.price}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById('billContent').innerHTML = `
+                <div class="bill-info">
+                    <p><strong>Student ID:</strong> ${currentStudentId}</p>
+                    <p><strong>Month:</strong> ${currentMonth}</p>
+                </div>
+                
+                ${meals.length > 0 ? `
+                    <table class="bill-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Day</th>
+                                <th>Meal</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                    
+                    <div class="total-amount">
+                        Total Amount: ₹${totalAmount}
+                    </div>
+                ` : `
+                    <p style="text-align: center; color: #666; font-size: 1.2rem; padding: 20px;">
+                        No meals selected yet for this month.
+                    </p>
+                `}
+                
+                <div class="payment-section">
+                    <h3>💳 Pay Your Bill</h3>
+                    <p style="font-size: 1.5rem; color: #28a745; font-weight: bold; margin-bottom: 20px;">
+                        Amount to Pay: ₹${totalAmount}
+                    </p>
+                    ${totalAmount > 0 ? `
+                        <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); max-width: 350px; margin: 0 auto;">
+                            <img src="${qrCodeUrl}" 
+                                 alt="UPI Payment QR Code" 
+                                 style="width: 280px; height: 280px; display: block; margin: 0 auto; border-radius: 8px;"
+                                 onload="console.log('QR Code loaded successfully')"
+                                 onerror="console.error('QR Code failed to load'); this.style.display='none'; this.parentElement.innerHTML='<div style=text-align:center;padding:40px;><p style=color:#e74c3c;font-size:1.2rem;margin-bottom:20px;>⚠️ QR Code Failed to Load</p><p style=font-size:1.1rem;color:#666;margin-bottom:10px;><strong>Pay manually to:</strong></p><p style=font-size:1.5rem;color:#667eea;font-weight:bold;margin-bottom:10px;>${upiId}</p><p style=font-size:1.3rem;color:#28a745;font-weight:bold;>Amount: ₹${totalAmount}</p></div>';">
+                        </div>
+                        <p style="font-size: 1.2rem; color: #666; margin-top: 20px; font-weight: 500;">
+                            <strong>Scan with:</strong> Google Pay, PhonePe, Paytm, or any UPI app
+                        </p>
+                        <p style="font-size: 1.1rem; color: #667eea; margin-top: 10px; font-weight: 600;">
+                            UPI ID: ${upiId}
+                        </p>
+                        <p style="font-size: 1rem; color: #28a745; margin-top: 10px; font-weight: bold;">
+                            Amount: ₹${totalAmount} (Pre-filled)
+                        </p>
+                        <p style="font-size: 0.9rem; color: #999; margin-top: 8px; font-style: italic;">
+                            ✓ Amount will be automatically filled when you scan
+                        </p>
+                    ` : `
+                        <div style="padding: 40px; background: #f8f9fa; border-radius: 12px;">
+                            <p style="font-size: 1.3rem; color: #666;">
+                                📱 QR code will appear once you select meals
+                            </p>
+                        </div>
+                    `}
+                </div>
+                
+                <button class="back-btn" onclick="showDaySelection()">← Back to Menu</button>
+            `;
+        }
+
+        // Initialize on page load
+        window.onload = function() {
+            if (currentStudentId) {
+                // Auto-redirect to day selection if already logged in
+                // showDaySelection();
+            }
+            
+            // Auto-submit scanner when barcode is scanned (usually ends with Enter)
+            document.getElementById('scannerInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    verifyStudent();
+                }
+            });
+        };
+
+        // Verify student at mess entrance
+        async function verifyStudent() {
+            const scannedId = document.getElementById('scannerInput').value.trim().toUpperCase();
+            const resultDiv = document.getElementById('verificationResult');
+            
+            if (!scannedId) {
+                resultDiv.innerHTML = '<div class="alert-error">⚠️ Please scan or enter Student ID</div>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<div class="loading">Verifying student and fetching today\'s meals...</div>';
+            
+            try {
+                // Get today's day
+                const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                const today = days[new Date().getDay()];
+                
+                // Fetch student's meal data from Google Sheets
+                const response = await fetch(`${APPS_SCRIPT_URL}?studentId=${scannedId}&day=${today}`);
+                const data = await response.json();
+                
+                if (data.success && data.todayMeals && data.todayMeals.length > 0) {
+                    displayTodayMeals(scannedId, today, data.todayMeals);
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert-error">
+                            ❌ No meals selected for today<br>
+                            <strong>Student ID:</strong> ${scannedId}<br>
+                            <strong>Day:</strong> ${today}<br><br>
+                            Please select meals from the website first
+                        </div>
+                        <button class="back-btn" onclick="clearScanner()">← Scan Another ID</button>
+                    `;
+                }
+            } catch (error) {
+                console.error('Verification error:', error);
+                resultDiv.innerHTML = `
+                    <div class="alert-error">
+                        ⚠️ Unable to verify student<br>
+                        Please check connection or try again
+                    </div>
+                    <button class="back-btn" onclick="clearScanner()">← Try Again</button>
+                `;
+            }
+        }
+
+        // Display today's meals for confirmation
+        function displayTodayMeals(studentId, day, meals) {
+            const resultDiv = document.getElementById('verificationResult');
+            
+            let mealsHtml = '';
+            meals.forEach(meal => {
+                mealsHtml += `
+                    <div class="meal-card">
+                        <h4>${meal.meal}</h4>
+                        <p><strong>Price:</strong> ₹${meal.price}</p>
+                    </div>
+                `;
+            });
+            
+            resultDiv.innerHTML = `
+                <div class="student-header">
+                    <h3>✓ Student Verified</h3>
+                    <p style="font-size: 1.3rem; margin-top: 10px;">ID: ${studentId}</p>
+                    <p style="font-size: 1.1rem;">Day: ${day}</p>
+                </div>
+                
+                <h3 style="color: #667eea; margin-bottom: 20px; font-size: 1.8rem;">Today's Selected Meals:</h3>
+                ${mealsHtml}
+                
+                <button class="confirm-btn" onclick="confirmMealDelivery('${studentId}')">
+                    ✓ Confirm & Allow Entry
+                </button>
+                
+                <button class="back-btn" onclick="clearScanner()">← Scan Another ID</button>
+            `;
+        }
+
+        // Confirm meal delivery
+        function confirmMealDelivery(studentId) {
+            const resultDiv = document.getElementById('verificationResult');
+            
+            resultDiv.innerHTML = `
+                <div class="alert-success">
+                    ✅ ENTRY CONFIRMED<br><br>
+                    Student ID: ${studentId}<br>
+                    Meals verified and approved<br><br>
+                    Student can collect meals now
+                </div>
+                <button class="back-btn" onclick="clearScanner()" style="margin-top: 30px;">← Scan Next Student</button>
+            `;
+            
+            // Auto-clear after 3 seconds
+            setTimeout(() => {
+                clearScanner();
+            }, 3000);
+        }
+
+        // Clear scanner for next student
+        function clearScanner() {
+            document.getElementById('scannerInput').value = '';
+            document.getElementById('verificationResult').innerHTML = '';
+            document.getElementById('scannerInput').focus();
+        }
+    </script>
+</body>
+</html>
