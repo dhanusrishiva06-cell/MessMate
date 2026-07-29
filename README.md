@@ -22,14 +22,6 @@ A modern web-based Hostel Mess Management System that simplifies hostel dining o
 - Google Sheet
 - Google App Script 
 
-**Project Structure**
-
-Hive-Smart-Mess/
-
-│── index.html
-│── Images
-
-
 
 ##  Future Enhancements
 
@@ -43,6 +35,5 @@ Hive-Smart-Mess/
 
 
 
-## 📄 License
 
-This project is developed for educational and academic purposes.
+Hive is a web-based Hostel Mess Management System developed as a college mini project. It demonstrates a practical approach to digitizing hostel mess operations by providing a simple, organized, and user-friendly platform for students and administrators.
