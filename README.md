@@ -22,9 +22,10 @@ A modern web-based Hostel Mess Management System that simplifies hostel dining o
 - Google Sheet
 - Google App Script 
 
-** Project Structure**
+**Project Structure**
 
-Hive-Smart-Mess
+Hive-Smart-Mess/
+
 │── index.html
 │── Images
 
